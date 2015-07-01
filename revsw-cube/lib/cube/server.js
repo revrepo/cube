@@ -1,11 +1,29 @@
+/*************************************************************************
+ *
+ * REV SOFTWARE CONFIDENTIAL
+ *
+ * [2013] - [2015] Rev Software, Inc.
+ * All Rights Reserved.
+ *
+ * NOTICE:  All information contained herein is, and remains
+ * the property of Rev Software, Inc. and its suppliers,
+ * if any.  The intellectual and technical concepts contained
+ * herein are proprietary to Rev Software, Inc.
+ * and its suppliers and may be covered by U.S. and Foreign Patents,
+ * patents in process, and are protected by trade secret or copyright law.
+ * Dissemination of this information or reproduction of this material
+ * is strictly forbidden unless prior written permission is obtained
+ * from Rev Software, Inc.
+ */
+
 var util = require("util"),
-    url = require("url"),
-    http = require("http"),
-    dgram = require("dgram"),
-    websocket = require("websocket"),
-    websprocket = require("websocket-server"),
-    static = require("node-static"),
-    database = require('./database');
+  url = require("url"),
+  http = require("http"),
+  dgram = require("dgram"),
+  websocket = require("websocket"),
+  websprocket = require("websocket-server"),
+  static = require("node-static"),
+  database = require('./database');
 
 /*********** For SysLog Integration **********/
 var revlogger = require("rev-logger");
@@ -15,7 +33,7 @@ var revlogger = require("rev-logger");
 websprocket.Connection = require("../../node_modules/websocket-server/lib/ws/connection");
 
 // Configuration for WebSocket requests.
-var wsOptions =  {
+var wsOptions = {
   maxReceivedFrameSize: 0x10000,
   maxReceivedMessageSize: 0x100000,
   fragmentOutgoingMessages: true,
@@ -31,20 +49,23 @@ module.exports = function(options) {
 
   // Don't crash on errors.
   process.on("uncaughtException", function(error) {
-    revlogger.log('emerg',"Uncaught exception in server.js file of cube"+JSON.stringify(error));
-    revlogger.log('emerg',"Uncaught exception in server.js file of cube"+JSON.stringify(error.stack));
+    revlogger.log('emerg', "Uncaught exception in server.js file of cube" + JSON.stringify(error));
+    revlogger.log('emerg', "Uncaught exception in server.js file of cube" + JSON.stringify(error.stack));
 
     util.log("uncaught exception: " + error);
     util.log(error.stack);
   });
 
   var server = {},
-      primary = http.createServer(),
-      secondary = websprocket.createServer(),
-      file = new static.Server("static"),
-      meta,
-      endpoints = {ws: [], http: []},
-      id = 0;
+    primary = http.createServer(),
+    secondary = websprocket.createServer(),
+    file = new static.Server("static"),
+    meta,
+    endpoints = {
+      ws: [],
+      http: []
+    },
+    id = 0;
 
   secondary.server = primary;
 
@@ -54,9 +75,7 @@ module.exports = function(options) {
       request = new websocket.request(socket, request, wsOptions);
       request.readHandshake();
       connect(request.accept(request.requestedProtocols[0], request.origin), request.httpRequest);
-    } else if (request.method === "GET"
-        && /^websocket$/i.test(request.headers.upgrade)
-        && /^upgrade$/i.test(request.headers.connection)) {
+    } else if (request.method === "GET" && /^websocket$/i.test(request.headers.upgrade) && /^upgrade$/i.test(request.headers.connection)) {
       new websprocket.Connection(secondary.manager, secondary.options, request, socket, head);
     }
   });
@@ -132,7 +151,9 @@ module.exports = function(options) {
     request.on("end", function() {
       file.serve(request, response, function(error) {
         if (error) {
-          response.writeHead(error.status, {"Content-Type": "text/plain"});
+          response.writeHead(error.status, {
+            "Content-Type": "text/plain"
+          });
           response.end(error.status + "");
         }
       });
@@ -147,11 +168,11 @@ module.exports = function(options) {
   server.start = function() {
     // Connect to mongodb.
     util.log("starting mongodb client");
-    database.open(options, function (error, db) {
+    database.open(options, function(error, db) {
       if (error) {
-        revlogger.log('emerg',"Error while starting the server"+error);
+        revlogger.log('emerg', "Error while starting the server" + error);
         throw error;
-      } 
+      }
       server.register(db, endpoints);
       meta = require("./event").putter(db);
       util.log("starting http server on port " + options["http-port"]);
